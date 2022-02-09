@@ -1,0 +1,4 @@
+wntr==0.4.0
+PyYAML==6.0
+pandas==0.25.1
+numpy==1.16.3
