@@ -8,10 +8,6 @@ times:
   StartTime: 2018-01-01 00:00
   EndTime: 2018-01-31 23:55
 
-leakages:
-- # linkID, startTime, endTime, leakDiameter (m), leakType, peakTime
-- 122, 2018-01-08 13:30, 2018-01-31 23:55, 0.011843, incipient, 2018-01-25 08:30
-
 pressure_sensors:
 - 11
 - 12
@@ -25,11 +21,3 @@ level_sensors:
 amrs:
 - 12
 - 21
-
-sensorfaults:
-- # nodeID/linkID, sensortyype (level, flow, pressure, amrs), timeStepStart, timeStepEnd, functiontype(constant, drift, normal, percentage, stuckzero), functionpar
-- 9, flow, 2018-01-08 13:30, 2018-01-31 23:55, constant, 3
-- 11, pressure, 2018-01-08 13:30, 2018-01-31 23:55, drift, 1
-- 12, amrs, 2018-01-08 13:30, 2018-01-31 23:55, normal, 2
-- 2, level, 2018-01-08 13:30, 2018-01-31 23:55, percentage, .1
-- 12, pressure, 2018-01-08 13:30, 2018-01-31 23:55, stuckzero, 0
