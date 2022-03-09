@@ -37,7 +37,7 @@ leakages = pd.read_excel('create_leakage_scenarios.xlsx', engine='openpyxl', con
 start_time = leak_pipes['times']['StartTime']
 end_time = leak_pipes['times']['EndTime']
 inp_file = leak_pipes['Network']['filename']
-results_folder = f'{os.getcwd()}\\Scenarios\\'
+results_folder = f'{os.getcwd()}\\LeakageScenarios\\'
 
 pressure_sensors = get_values(leak_pipes, 'pressure_sensors')
 amrs = get_values(leak_pipes, 'amrs')
@@ -50,7 +50,7 @@ errcode = False
 logging.basicConfig(filename=logfilename, level=logging.INFO, filemode="w")
 print(f'Run input file: "{inp_file}"')
 logging.info(f'Run input file: "{inp_file}"')
-logging.info('Start dataset generator.')
+logging.info('Start leakage scenarios dataset generator.')
 logging.info('Check configuration yalm file.')
 
 # demand-driven (DD) or pressure dependent demand (PDD)
@@ -63,8 +63,6 @@ class LeakDatasetCreator:
         # Create Results folder
         if scenario == 1:
             self.create_folder(results_folder)
-            self.create_folder(f'Scenarios')
-
         self.unc_range = arange(0, 0.25, 0.05)
 
         self.scenario = scenario
@@ -213,7 +211,7 @@ class LeakDatasetCreator:
             self.create_folder(leakages_folder)
 
         # Save the water network model to a file before using it in a simulation
-        with open('self.wn.pickle', 'wb') as f:
+        with open('self.wn.pickle_leak', 'wb') as f:
             pickle.dump(self.wn, f)
 
         # Run wntr simulator
@@ -313,7 +311,10 @@ class LeakDatasetCreator:
             # Close the Pandas Excel writer and output the Excel file.
             writer.save()
 
-            os.remove('self.wn.pickle')
+            try:
+                os.remove('self.wn.pickle_leak')
+            except:
+                pass
         else:
             print('Results empty.')
             logging.info('Results empty.')
