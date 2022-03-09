@@ -129,36 +129,38 @@ class LeakDatasetCreator:
         leak_i = 0
 
         number_of_leaks = list(set(leakages['scenario'])).count(self.scenario)
-        for leak in leakages.iterrows():
+        scenario_rows = leakages.iloc[:, 0] == scenario
+        scenario_rows = [i for i, x in enumerate(scenario_rows) if x]
+        for leakn in [leakages.iloc[scenario_rows]]:
             # Split pipe and add a leak node
             # leakages: pipeID, startTime, endTime, leakDiameter, leakType (abrupt, incipient)
             # Start time of leak
             #leakages.iloc[:, 0] == scenario
-            leakn = leak[1]
-            if leakn['scenario'] != self.scenario:
+            lind = leakn.index.values[0]
+            if leakn['scenario'][lind] != self.scenario:
                 continue
-            ST = self.time_stamp.get_loc(leakn['starttime'])
+            ST = self.time_stamp.get_loc(leakn['starttime'][lind])
 
             # End Time of leak
-            ET = self.time_stamp.get_loc(leakn['endtime'])
+            ET = self.time_stamp.get_loc(leakn['endtime'][lind])
 
             # Get leak type
-            leak_type[leak_i] = leakn['profile']
+            leak_type[leak_i] = leakn['profile'][lind]
 
             # Split pipe to add a leak
-            pipe_id = self.wn.get_link(str(leakn['linkid']))
+            pipe_id = self.wn.get_link(str(leakn['linkid'][lind]))
             node_leak = f'{pipe_id}_leaknode'
             self.wn = wntr.morph.split_pipe(self.wn, pipe_id, f'{pipe_id}_Bleak', node_leak)
             leak_node[leak_i] = self.wn.get_node(self.wn.node_name_list[self.wn.node_name_list.index(node_leak)])
 
-            if 'incipient' in leakn['profile']:
+            if 'incipient' in leakn['profile'][lind]:
                 # END TIME
                 ET = ET + 1
-                PT = self.time_stamp.get_loc(leakn['peaktime'])+1
+                PT = self.time_stamp.get_loc(leakn['peaktime'][lind])+1
 
                 # Leak diameter as max magnitude for incipient
                 nominal_pres = 100
-                leak_diameter[leak_i] = float(leakn['leakdiameter'])
+                leak_diameter[leak_i] = float(leakn['leakdiameter'][lind])
                 leak_area[leak_i] = 3.14159 * (leak_diameter[leak_i] / 2) ** 2
 
                 # incipient
@@ -187,7 +189,7 @@ class LeakDatasetCreator:
             else:
                 leak_param[leak_i] = 'leak_demand'
                 PT = ST
-                leak_diameter[leak_i] = float(leakn['leakdiameter'])
+                leak_diameter[leak_i] = float(leakn['leakdiameter'][lind])
                 leak_area[leak_i] = 3.14159 * (leak_diameter[leak_i] / 2) ** 2
 
                 leak_node[leak_i]._leak_end_control_name = str(leak_i) + 'end'
