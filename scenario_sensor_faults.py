@@ -37,7 +37,8 @@ sensor_faults = pd.read_excel('create_sensor_fault_scenarios.xlsx', engine='open
 start_time = data_yalm['times']['StartTime']
 end_time = data_yalm['times']['EndTime']
 inp_file = data_yalm['Network']['filename']
-results_folder = f'{os.getcwd()}\\Scenarios\\'
+scenariofolder = 'SensorFaultScenarios'
+results_folder = f'{os.getcwd()}\\{scenariofolder}\\'
 
 pressure_sensors = get_values(data_yalm, 'pressure_sensors')
 amrs = get_values(data_yalm, 'amrs')
@@ -53,7 +54,7 @@ errcode = False
 logging.basicConfig(filename=logfilename, level=logging.INFO, filemode="w")
 print(f'Run input file: "{inp_file}"')
 logging.info(f'Run input file: "{inp_file}"')
-logging.info('Start dataset generator.')
+logging.info('Start sensor fault scenarios dataset generator.')
 logging.info('Check configuration yalm file.')
 
 for sfault in sensor_faults.iterrows():
@@ -185,7 +186,7 @@ class DatasetCreator:
         logging.info(f"Generating dataset...")
 
         # Save the water network model to a file before using it in a simulation
-        with open('self.wn.pickle', 'wb') as f:
+        with open('self.wn.pickle_fault', 'wb') as f:
             pickle.dump(self.wn, f)
 
         # Run wntr simulator
@@ -381,7 +382,10 @@ class DatasetCreator:
             # Close the Pandas Excel writer and output the Excel file.
             writer.save()
 
-            os.remove('self.wn.pickle')
+            try:
+                os.remove('self.wn.pickle_fault')
+            except:
+                pass
         else:
             print('Results empty.')
             logging.info('Results empty.')
@@ -396,7 +400,6 @@ if __name__ == '__main__':
     # Call dataset creator
     L = DatasetCreator()
     # Create scenario one-by-one
-    L.create_folder(f'Scenarios')
     scenarios = list(set(sensor_faults['scenario']))
 
     for scenario in scenarios:
