@@ -58,14 +58,16 @@ Mode_Simulation = 'PDD'  # 'PDD'#'PDD'
 
 
 class LeakDatasetCreator:
-    def __init__(self):
+    def __init__(self, scenario):
 
         # Create Results folder
-        self.create_folder(results_folder)
+        if scenario == 1:
+            self.create_folder(results_folder)
+            self.create_folder(f'Scenarios')
 
-        self.scenario_num = 1
         self.unc_range = arange(0, 0.25, 0.05)
 
+        self.scenario = scenario
         # Load EPANET network file
         self.wn = wntr.network.WaterNetworkModel(inp_file)
 
@@ -110,7 +112,7 @@ class LeakDatasetCreator:
         except Exception as error:
             pass
 
-    def dataset_generator(self, scenario):
+    def dataset_generator(self):
         # Path of EPANET Input File
         print(f"Generating dataset...")
         logging.info(f"Generating dataset...")
@@ -126,14 +128,14 @@ class LeakDatasetCreator:
         leak_param = {}
         leak_i = 0
 
-        number_of_leaks = list(set(leakages['scenario'])).count(scenario)
+        number_of_leaks = list(set(leakages['scenario'])).count(self.scenario)
         for leak in leakages.iterrows():
             # Split pipe and add a leak node
             # leakages: pipeID, startTime, endTime, leakDiameter, leakType (abrupt, incipient)
             # Start time of leak
             #leakages.iloc[:, 0] == scenario
             leakn = leak[1]
-            if leakn['scenario'] != scenario:
+            if leakn['scenario'] != self.scenario:
                 continue
             ST = self.time_stamp.get_loc(leakn['starttime'])
 
@@ -205,7 +207,7 @@ class LeakDatasetCreator:
 
         # Save/Write input file with new settings
         if number_of_leaks:
-            leakages_folder = f'{results_folder}scenario{str(scenario)}\\Leakages'
+            leakages_folder = f'{results_folder}scenario{str(self.scenario)}\\Leakages'
             self.create_folder(leakages_folder)
 
         # Save the water network model to a file before using it in a simulation
@@ -297,7 +299,7 @@ class LeakDatasetCreator:
             df3 = pd.DataFrame(total_flows)
             df4 = pd.DataFrame(total_levels)
             # Create a Pandas Excel writer using XlsxWriter as the engine.
-            writer = pd.ExcelWriter(f'{results_folder}scenario{str(scenario)}\\Measurements.xlsx', engine='xlsxwriter')
+            writer = pd.ExcelWriter(f'{results_folder}scenario{str(self.scenario)}\\Measurements.xlsx', engine='xlsxwriter')
 
             # Convert the dataframe to an XlsxWriter Excel object.
             # Pressures (m), Demands (m^3/h), Flows (m^3/h), Levels (m)
@@ -325,11 +327,8 @@ if __name__ == '__main__':
     for scenario in leakages['scenario']:
         if isnan(scenario):
             continue
-        L = LeakDatasetCreator()
-        if scenario == 1:
-            # Create scenario one-by-one
-            L.create_folder(f'Scenarios')
-        L.dataset_generator(scenario)
+        L = LeakDatasetCreator(scenario)
+        L.dataset_generator()
 
     print(f"Dataset completed.")
     logging.info(f"Dataset completed.")
