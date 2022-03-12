@@ -58,8 +58,8 @@ logging.info('Start sensor fault scenarios dataset generator.')
 logging.info('Check configuration yalm file.')
 
 for sfault in sensor_faults.iterrows():
-    id = str(sfault[1]['nodeid/linkid'])
-    typefault = sfault[1]['sensortype']
+    id = str(sfault[1]['nodeid_linkid']).strip()
+    typefault = sfault[1]['sensortype'].strip()
     if typefault == 'pressure' and id not in pressure_sensors:
         errcode = True
         logging.error(f'Pressure sensor "{id}" does not exist at the location of the sensor fault!')
@@ -213,9 +213,9 @@ class DatasetCreator:
             scenario_id = sfault[1]['scenario']
             if scenario_id != scenario:
                 continue
-            fault_id = str(sfault[1]['nodeid/linkid'])
-            sens_type = sfault[1]['sensortype']
-            functiontype = sfault[1]['profile']
+            fault_id = str(sfault[1]['nodeid_linkid']).strip()
+            sens_type = sfault[1]['sensortype'].strip()
+            functiontype = sfault[1]['profile'].strip()
             functionpar = sfault[1]['magnitude']
             fault_start = sfault[1]['starttime']
             fault_end = sfault[1]['endtime']
