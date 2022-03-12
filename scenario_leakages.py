@@ -146,7 +146,7 @@ class LeakDatasetCreator:
             leak_type[leak_i] = leakn['profile'][lind]
 
             # Split pipe to add a leak
-            pipe_id = self.wn.get_link(str(leakn['linkid'][lind]))
+            pipe_id = self.wn.get_link(str(leakn['linkid'][lind].strip()))
             node_leak = f'{pipe_id}_leaknode'
             self.wn = wntr.morph.split_pipe(self.wn, pipe_id, f'{pipe_id}_Bleak', node_leak)
             leak_node[leak_i] = self.wn.get_node(self.wn.node_name_list[self.wn.node_name_list.index(node_leak)])
