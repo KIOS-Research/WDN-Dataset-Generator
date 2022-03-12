@@ -143,7 +143,7 @@ class LeakDatasetCreator:
             ET = self.time_stamp.get_loc(leakn['endtime'][lind])
 
             # Get leak type
-            leak_type[leak_i] = leakn['profile'][lind]
+            leak_type[leak_i] = leakn['profile'][lind].strip()
 
             # Split pipe to add a leak
             pipe_id = self.wn.get_link(str(leakn['linkid'][lind].strip()))
