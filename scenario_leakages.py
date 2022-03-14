@@ -6,7 +6,6 @@ Copyright: (C) 2022, KIOS Research Center of Excellence
 import pandas as pd
 from numpy import isnan, arange
 import wntr
-import pickle
 import os
 import sys
 import yaml
@@ -24,7 +23,7 @@ try:
 except:
     print('"dataset_configuration" file not found.')
     logging.info('"dataset_configuration" file not found.')
-    os.startfile(logfilename)
+    #os.startfile(logfilename)
     sys.exit(1)
 
 def get_values(leak_pipes, field):
@@ -60,14 +59,12 @@ Mode_Simulation = 'PDD'  # 'PDD'#'PDD'
 
 
 class LeakDatasetCreator:
-    def __init__(self, scenario):
+    def __init__(self, NumScenarios, numCores):
 
         # Create Results folder
-        if scenario == 1:
-            self.create_folder(results_folder)
+        self.create_folder(results_folder)
         self.unc_range = arange(0, 0.25, 0.05)
 
-        self.scenario = scenario
         # Load EPANET network file
         self.wn = wntr.network.WaterNetworkModel(inp_file)
 
@@ -87,14 +84,17 @@ class LeakDatasetCreator:
         except:
             print('Please check you time step in network file.')
             logging.info('Please check you time step in network file.')
-            os.startfile(logfilename)
+            #os.startfile(logfilename)
             sys.exit(1)
 
         # Simulation duration in steps
         self.wn.options.time.duration = (len(self.time_stamp) - 1) * 300  # 5min step
         self.TIMESTEPS = int(self.wn.options.time.duration / self.wn.options.time.hydraulic_timestep)
 
-        self.dataset_generator()
+        p = multiprocessing.Pool(numCores)
+        p.map(self.dataset_generator, list(range(1, NumScenarios+1)))
+        p.close()
+        p.join()
 
     def create_csv_file(self, values, time_stamp, columnname, pathname):
 
@@ -114,7 +114,7 @@ class LeakDatasetCreator:
         except Exception as error:
             pass
 
-    def dataset_generator(self):
+    def dataset_generator(self, scenario):
         # Path of EPANET Input File
         print(f"Generating dataset...")
         logging.info(f"Generating dataset...")
@@ -130,8 +130,8 @@ class LeakDatasetCreator:
         leak_param = {}
         leak_i = 0
 
-        number_of_leaks = list(set(leakages['scenario'])).count(self.scenario)
-        scenario_rows = leakages.iloc[:, 0] == self.scenario
+        number_of_leaks = list(set(leakages['scenario'])).count(scenario)
+        scenario_rows = leakages.iloc[:, 0] == scenario
         scenario_rows = [i for i, x in enumerate(scenario_rows) if x]
         for leakn in [leakages.iloc[scenario_rows]]:
             # Split pipe and add a leak node
@@ -139,7 +139,7 @@ class LeakDatasetCreator:
             # Start time of leak
             #leakages.iloc[:, 0] == scenario
             lind = leakn.index.values[0]
-            if leakn['scenario'][lind] != self.scenario:
+            if leakn['scenario'][lind] != scenario:
                 continue
             ST = self.time_stamp.get_loc(leakn['starttime'][lind])
 
@@ -211,12 +211,8 @@ class LeakDatasetCreator:
 
         # Save/Write input file with new settings
         if number_of_leaks:
-            leakages_folder = os.path.join(f'{results_folder}scenario{str(self.scenario)}', 'Leakages')
+            leakages_folder = os.path.join(f'{results_folder}scenario{str(scenario)}', 'Leakages')
             self.create_folder(leakages_folder)
-
-        # Save the water network model to a file before using it in a simulation
-        with open('self.wn.pickle_leak', 'wb') as f:
-            pickle.dump(self.wn, f)
 
         # Run wntr simulator
         self.wn.options.hydraulic.demand_model = Mode_Simulation
@@ -303,7 +299,7 @@ class LeakDatasetCreator:
             df3 = pd.DataFrame(total_flows)
             df4 = pd.DataFrame(total_levels)
             # Create a Pandas Excel writer using XlsxWriter as the engine.
-            writer = pd.ExcelWriter(os.path.join(f'{results_folder}scenario{str(self.scenario)}', 'Measurements.xlsx'), engine='xlsxwriter')
+            writer = pd.ExcelWriter(os.path.join(f'{results_folder}scenario{str(scenario)}', 'Measurements.xlsx'), engine='xlsxwriter')
 
             # Convert the dataframe to an XlsxWriter Excel object.
             # Pressures (m), Demands (m^3/h), Flows (m^3/h), Levels (m)
@@ -314,11 +310,6 @@ class LeakDatasetCreator:
 
             # Close the Pandas Excel writer and output the Excel file.
             writer.save()
-
-            try:
-                os.remove('self.wn.pickle_leak')
-            except:
-                pass
         else:
             print('Results empty.')
             logging.info('Results empty.')
@@ -330,17 +321,12 @@ if __name__ == '__main__':
     # Create tic / toc
     t = time.time()
 
-    NumScenarios = len(leakages['scenario'])
-    scArray = range(1, NumScenarios)
-
+    NumScenarios = list(set(leakages['scenario'])).__len__()
     numCores = multiprocessing.cpu_count()
-    p = multiprocessing.Pool(numCores)
-    p.map(LeakDatasetCreator, list(range(1, NumScenarios+1)))
-    p.close()
-    p.join()
+    LeakDatasetCreator(NumScenarios, numCores)
 
     print(f"Dataset completed.")
     logging.info(f"Dataset completed.")
     print(f'Total Elapsed time is {str(time.time() - t)} seconds.')
     logging.info(f'Total Elapsed time is {str(time.time() - t)} seconds.')
-    os.startfile(logfilename)
+    #os.startfile(logfilename)
