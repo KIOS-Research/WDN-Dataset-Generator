@@ -6,7 +6,6 @@ Copyright: (C) 2022, KIOS Research Center of Excellence
 import pandas as pd
 from numpy import exp, random, arange
 import wntr
-import pickle
 import os
 import sys
 import yaml
@@ -15,6 +14,7 @@ import time
 from math import sqrt
 import os
 import logging
+import multiprocessing
 
 # Read input arguments from yalm file
 try:
@@ -23,16 +23,17 @@ try:
 except:
     print('"dataset_configuration" file not found.')
     logging.info('"dataset_configuration" file not found.')
-    os.startfile(logfilename)
+    #os.startfile(logfilename)
     sys.exit(1)
+
 
 def get_values(data_yalm, field):
     values = []
     [values.append(str(sens)) for sens in data_yalm[field] if sens is not None]
     return values
 
-
-sensor_faults = pd.read_excel('create_sensor_fault_scenarios.xlsx', engine='openpyxl')
+sensor_faults = pd.read_excel('create_sensor_fault_scenarios.xlsx', engine='openpyxl', converters={'scenario': int, 'nodeid_linkid': str})
+sensor_faults = sensor_faults.dropna(subset=['scenario'])
 
 start_time = data_yalm['times']['StartTime']
 end_time = data_yalm['times']['EndTime']
@@ -79,7 +80,7 @@ for sfault in sensor_faults.iterrows():
 if errcode:
     print('Error: A sensor does not exist at the location of the sensor fault!')
     logging.info('Stop script generator.')
-    os.startfile(logfilename)
+    #os.startfile(logfilename)
     sys.exit(1)
 
 # demand-driven (DD) or pressure dependent demand (PDD)
@@ -87,7 +88,7 @@ Mode_Simulation = 'PDD'  # 'PDD'#'PDD'
 
 
 class DatasetCreator:
-    def __init__(self):
+    def __init__(self, NumScenarios, numCores):
 
         # Create Results folder
         self.create_folder(results_folder)
@@ -114,13 +115,20 @@ class DatasetCreator:
         except:
             print('Please check you time step in network file.')
             logging.info('Please check you time step in network file.')
-            os.startfile(logfilename)
+            #os.startfile(logfilename)
             sys.exit(1)
 
         # Simulation duration in steps
         self.wn.options.time.duration = (len(self.time_stamp) - 1) * 300  # 5min step
         self.TIMESTEPS = int(self.wn.options.time.duration / self.wn.options.time.hydraulic_timestep)
-        self.runsimulator = True
+
+        self.wn.options.hydraulic.demand_model = Mode_Simulation
+        sim = wntr.sim.WNTRSimulator(self.wn)
+        self.results = sim.run_sim()
+        p = multiprocessing.Pool(numCores)
+        p.map(self.dataset_generator, list(range(1, NumScenarios+1)))
+        p.close()
+        p.join()
 
     def create_csv_file(self, values, time_stamp, columnname, pathname):
 
@@ -173,7 +181,7 @@ class DatasetCreator:
                 if ftype == 'percentage':
                     phi = fpar * y0k
                 if ftype == 'stuckzero':
-                    phi = -y0k
+                    phi = fpar-y0k
 
             df = b * phi
             y0k = y0k + df
@@ -181,20 +189,10 @@ class DatasetCreator:
         return y
 
     def dataset_generator(self, scenario):
+
         # Path of EPANET Input File
         print(f"Generating dataset...")
         logging.info(f"Generating dataset...")
-
-        # Save the water network model to a file before using it in a simulation
-        with open('self.wn.pickle_fault', 'wb') as f:
-            pickle.dump(self.wn, f)
-
-        # Run wntr simulator
-        if self.runsimulator:
-            self.wn.options.hydraulic.demand_model = Mode_Simulation
-            sim = wntr.sim.WNTRSimulator(self.wn)
-            self.results = sim.run_sim()
-            self.runsimulator = False
 
         # Faults
         fault_objid = {}
@@ -381,11 +379,6 @@ class DatasetCreator:
 
             # Close the Pandas Excel writer and output the Excel file.
             writer.save()
-
-            try:
-                os.remove('self.wn.pickle_fault')
-            except:
-                pass
         else:
             print('Results empty.')
             logging.info('Results empty.')
@@ -397,16 +390,12 @@ if __name__ == '__main__':
     # Create tic / toc
     t = time.time()
 
-    # Call dataset creator
-    L = DatasetCreator()
-    # Create scenario one-by-one
-    scenarios = list(set(sensor_faults['scenario']))
-
-    for scenario in scenarios:
-        L.dataset_generator(scenario)
+    NumScenarios = list(set(sensor_faults['scenario'])).__len__()
+    numCores = multiprocessing.cpu_count()
+    DatasetCreator(NumScenarios, numCores)
 
     print(f"Dataset completed.")
     logging.info(f"Dataset completed.")
     print(f'Total Elapsed time is {str(time.time() - t)} seconds.')
     logging.info(f'Total Elapsed time is {str(time.time() - t)} seconds.')
-    os.startfile(logfilename)
+    #os.startfile(logfilename)
