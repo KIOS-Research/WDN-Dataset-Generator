@@ -207,7 +207,7 @@ class LeakDatasetCreator:
 
         # Save/Write input file with new settings
         if number_of_leaks:
-            leakages_folder = f'{results_folder}scenario{str(self.scenario)}\\Leakages'
+            leakages_folder = os.path.join(f'{results_folder}scenario{str(self.scenario)}', 'Leakages')
             self.create_folder(leakages_folder)
 
         # Save the water network model to a file before using it in a simulation
@@ -251,7 +251,7 @@ class LeakDatasetCreator:
                 #self.create_csv_file(leaks, self.time_stamp, 'Description', f'{results_folder}scenario{str(scenario)}\\Leak_{str(leak_node[leak_i])}_demand.csv')
                 df1 = pd.DataFrame(totals_info)
                 df2 = pd.DataFrame(total_Leaks)
-                writer = pd.ExcelWriter(f'{leakages_folder}\\Leak_{NODEID}.xlsx', engine='xlsxwriter')
+                writer = pd.ExcelWriter(os.path.join(leakages_folder, f'Leak_{NODEID}.xlsx'), engine='xlsxwriter')
                 df1.to_excel(writer, sheet_name='Info', index=False)
                 df2.to_excel(writer, sheet_name='Demand (m3_h)', index=False)
                 writer.save()
@@ -299,7 +299,7 @@ class LeakDatasetCreator:
             df3 = pd.DataFrame(total_flows)
             df4 = pd.DataFrame(total_levels)
             # Create a Pandas Excel writer using XlsxWriter as the engine.
-            writer = pd.ExcelWriter(f'{results_folder}scenario{str(self.scenario)}\\Measurements.xlsx', engine='xlsxwriter')
+            writer = pd.ExcelWriter(os.path.join(f'{results_folder}scenario{str(self.scenario)}', 'Measurements.xlsx'), engine='xlsxwriter')
 
             # Convert the dataframe to an XlsxWriter Excel object.
             # Pressures (m), Demands (m^3/h), Flows (m^3/h), Levels (m)
