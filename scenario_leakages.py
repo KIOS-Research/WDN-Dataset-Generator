@@ -15,6 +15,7 @@ import time
 from math import sqrt
 import os
 import logging
+import multiprocessing
 
 # Read input arguments from yalm file
 try:
@@ -33,6 +34,7 @@ def get_values(leak_pipes, field):
 
 
 leakages = pd.read_excel('create_leakage_scenarios.xlsx', engine='openpyxl', converters={'scenario': int, 'linkid': str})
+leakages = leakages.dropna(subset=['scenario'])
 
 start_time = leak_pipes['times']['StartTime']
 end_time = leak_pipes['times']['EndTime']
@@ -92,6 +94,8 @@ class LeakDatasetCreator:
         self.wn.options.time.duration = (len(self.time_stamp) - 1) * 300  # 5min step
         self.TIMESTEPS = int(self.wn.options.time.duration / self.wn.options.time.hydraulic_timestep)
 
+        self.dataset_generator()
+
     def create_csv_file(self, values, time_stamp, columnname, pathname):
 
         file = pd.DataFrame(values)
@@ -127,7 +131,7 @@ class LeakDatasetCreator:
         leak_i = 0
 
         number_of_leaks = list(set(leakages['scenario'])).count(self.scenario)
-        scenario_rows = leakages.iloc[:, 0] == scenario
+        scenario_rows = leakages.iloc[:, 0] == self.scenario
         scenario_rows = [i for i, x in enumerate(scenario_rows) if x]
         for leakn in [leakages.iloc[scenario_rows]]:
             # Split pipe and add a leak node
@@ -326,12 +330,14 @@ if __name__ == '__main__':
     # Create tic / toc
     t = time.time()
 
-    # Call leak dataset creator
-    for scenario in leakages['scenario']:
-        if isnan(scenario):
-            continue
-        L = LeakDatasetCreator(scenario)
-        L.dataset_generator()
+    NumScenarios = len(leakages['scenario'])
+    scArray = range(1, NumScenarios)
+
+    numCores = multiprocessing.cpu_count()
+    p = multiprocessing.Pool(numCores)
+    p.map(LeakDatasetCreator, list(range(1, NumScenarios+1)))
+    p.close()
+    p.join()
 
     print(f"Dataset completed.")
     logging.info(f"Dataset completed.")
