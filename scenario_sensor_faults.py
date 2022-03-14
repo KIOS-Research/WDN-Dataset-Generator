@@ -267,7 +267,7 @@ class DatasetCreator:
 
         if self.results:
             # Create CSV files
-            faults_folder = f'{results_folder}scenario{str(scenario)}\\WithoutSensorFaults'
+            faults_folder = os.path.join(f'{results_folder}scenario{str(scenario)}', 'WithoutSensorFaults')
             self.create_folder(faults_folder)
             for index_id in fault_index_ids.values():
                 fault_id = fault_objid[index_id]
@@ -305,7 +305,7 @@ class DatasetCreator:
                 total_Faults[fault_id] = withoutfault
                 df1 = pd.DataFrame(totals_info)
                 df2 = pd.DataFrame(total_Faults)
-                writer = pd.ExcelWriter(f'{faults_folder}\\WithoutSensorFault_{index_id}_{fault_param[index_id]}.xlsx', engine='xlsxwriter')
+                writer = pd.ExcelWriter(os.path.join(faults_folder, f'WithoutSensorFault_{index_id}_{fault_param[index_id]}.xlsx'), engine='xlsxwriter')
                 df1.to_excel(writer, sheet_name='Info', index=False)
                 df2.to_excel(writer, sheet_name=f'{sheetnamefault[fault_param[index_id]]}', index=False)
                 writer.save()
@@ -370,7 +370,7 @@ class DatasetCreator:
             df3 = pd.DataFrame(total_flows)
             df4 = pd.DataFrame(total_levels)
             # Create a Pandas Excel writer using XlsxWriter as the engine.
-            writer = pd.ExcelWriter(f'{results_folder}scenario{str(scenario)}\\Measurements.xlsx', engine='xlsxwriter')
+            writer = pd.ExcelWriter(os.path.join(f'{results_folder}scenario{str(scenario)}', 'Measurements.xlsx'), engine='xlsxwriter')
 
             # Convert the dataframe to an XlsxWriter Excel object.
             # Pressures (m), Demands (m^3/h), Flows (m^3/h), Levels (m)
