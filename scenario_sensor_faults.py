@@ -49,6 +49,19 @@ sensortypes = {'level': 'pressure', 'flow': 'flowrate', 'pressure': 'pressure', 
 objecttype = {'level': 'node', 'flow': 'link', 'pressure': 'node', 'amrs': 'node'}
 sheetnamefault = {'level': 'Levels (m)', 'flow': 'Flows (m3_h)', 'pressure': 'Pressures (m)', 'amrs': 'Demands (L_h)'}
 
+# Get sensor limits (min, max)
+pressure_limit_min = data_yalm['pressure_sensor_limits']['min']
+pressure_limit_max = data_yalm['pressure_sensor_limits']['max']
+
+flow_limit_min = data_yalm['flow_sensor_limits']['min']
+flow_limit_max = data_yalm['flow_sensor_limits']['max']
+
+level_limit_min = data_yalm['level_sensor_limits']['min']
+level_limit_max = data_yalm['level_sensor_limits']['max']
+
+amrs_limit_min = data_yalm['amrs_sensor_limits']['min']
+amrs_limit_max = data_yalm['amrs_sensor_limits']['max']
+
 # Check if sensor exists
 logfilename = "dataset_generator.log"
 errcode = False
@@ -185,6 +198,26 @@ class DatasetCreator:
 
             df = b * phi
             y0k = y0k + df
+            if 'pressure' in index_id:
+                if pressure_limit_max is not None and y0k > pressure_limit_max:
+                    y0k = pressure_limit_max
+                elif pressure_limit_min is not None and y0k < pressure_limit_min:
+                    y0k = pressure_limit_min
+            if 'flow' in index_id:
+                if amrs_limit_max is not None and y0k > flow_limit_max:
+                    y0k = flow_limit_max
+                elif amrs_limit_max is not None and y0k < flow_limit_min:
+                    y0k = flow_limit_min
+            if 'level' in index_id:
+                if level_limit_max is not None and y0k > level_limit_max:
+                    y0k = level_limit_max
+                elif level_limit_min is not None and y0k < level_limit_min:
+                    y0k = level_limit_min
+            if 'amr' in index_id and amrs_limit_max is not None:
+                if amrs_limit_max is not None and y0k > amrs_limit_max:
+                    y0k = amrs_limit_max
+                elif amrs_limit_min is not None and y0k < amrs_limit_min:
+                    y0k = amrs_limit_min
             y.append(y0k)
         return y
 

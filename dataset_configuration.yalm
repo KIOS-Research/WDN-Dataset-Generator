@@ -21,3 +21,19 @@ level_sensors:
 amrs:
 - 12
 - 21
+
+pressure_sensor_limits:
+  min: 0 
+  max: 80
+ 
+flow_sensor_limits:
+  min:  
+  max: 
+  
+level_sensor_limits:
+  min: 0 
+  max: 100
+
+amrs_sensor_limits:
+  min: 
+  max: 
